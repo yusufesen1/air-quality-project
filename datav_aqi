@@ -1,0 +1,41 @@
+import numpy as np 
+import pandas as pd 
+import plotly.express as px 
+import seaborn as sns
+from textblob import TextBlob 
+df = pd.read_csv('konak-air-quality.csv')
+from sklearn.model_selection import train_test_split
+sns.set(style="whitegrid")
+df.isnull().sum()
+df["date"] = pd.to_datetime(df["date"], format="%Y/%m/%d")
+df_2023 = df[df["date"].dt.year == 2023]
+df_2023["month"] = df_2023["date"].dt.month
+df_2023.columns = df_2023.columns.str.strip()
+df_2023[["pm25", "pm10", "o3", "no2", "so2", "co"]] = df_2023[["pm25", "pm10", "o3", "no2", "so2", "co"]].apply(pd.to_numeric, errors='coerce') 
+monthly_data = df_2023.groupby("month")[["pm25", "pm10", "o3", "no2", "so2", "co"]].mean()
+import matplotlib.pyplot as plt
+monthly_data = monthly_data.reindex(range(1, 13), fill_value=None)
+
+# Grafikler için figür oluştur
+fig, axes = plt.subplots(3, 2, figsize=(14, 12))  # 3 satır, 2 sütun
+axes = axes.flatten()
+
+# Sütun isimlerini ve renkleri ayarlayalım
+columns = ["pm25", "pm10", "o3", "no2", "so2", "co"]
+colors = ['b', 'g', 'r', 'c', 'm', 'y']
+
+# Tüm ayları görmek için eksik ayları NaN ile doldur
+monthly_data = monthly_data.reindex(range(1, 13))
+
+# Her sütun için grafik çizelim
+for i, col in enumerate(columns):
+    axes[i].plot(monthly_data.index, monthly_data[col], marker='o', color=colors[i])
+    axes[i].set_title(f"{col} - 2023 Aylık Ortalamalar")
+    axes[i].set_xlabel("Ay")
+    axes[i].set_ylabel(f"{col.upper()} (µg/m³)")
+    axes[i].set_xticks(monthly_data.index)  # Ayları etiketle
+    axes[i].set_xticklabels(["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"])
+
+# Grafiklerin düzenini ayarlayalım
+plt.tight_layout()
+plt.show()
