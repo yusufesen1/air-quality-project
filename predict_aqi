@@ -1,0 +1,48 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from prophet import Prophet
+from prophet.diagnostics import cross_validation, performance_metrics
+
+#Veri dosyasının yüklenmesi
+df = pd.read_csv("konak-air-quality.csv")
+
+#Sütun isimlerini kontrol et ve düzenle
+df.columns = df.columns.str.strip()  # Başındaki/sonundaki boşlukları kaldır
+df.columns = df.columns.str.lower()  # Sütun isimlerini küçük harfe çevir
+print("Sütunlar:", df.columns)
+
+#'date' sütununu datetime formatına çevir
+df['ds'] = pd.to_datetime(df['date'])
+
+#'pm25' sütunundaki geçersiz değerleri temizle
+df['y'] = pd.to_numeric(df['pm25'], errors='coerce')  # Geçersiz verileri NaN yap
+
+#NaN değerleri doldur veya kaldır
+df = df.dropna(subset=['y'])  # Hedef sütununda NaN olan satırları kaldır
+#Alternatif olarak NaN değerleri bir önceki değerle doldurabilirsiniz:
+#df['y'] = df['y'].fillna(method='ffill')
+
+#Prophet formatına uygun hale getir
+df = df[['ds', 'y']]
+print("Prophet için hazırlanan veri:\n", df.head())
+
+#Prophet modeli oluştur
+model = Prophet()
+model.fit(df)
+
+#Gelecekteki tarihleri tahmin et
+future = model.make_future_dataframe(periods=365)  # 365 gün ileriye tahmin yap
+forecast = model.predict(future)
+
+#Tahmin sonuçlarını göster
+print("Tahmin edilen sonuçlar:\n", forecast[['ds', 'yhat', 'yhat_lower', 'yhat_upper']].head())
+
+#Tahmin grafiğini oluştur
+fig = model.plot(forecast)
+plt.show()
+
+#Bileşen grafiğini oluştur
+fig2 = model.plot_components(forecast)
+plt.show()
